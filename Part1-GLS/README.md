@@ -482,7 +482,7 @@ The primary objective of post-synthesis simulation is to confirm that the synthe
 |------------|-------------------------------------|--------------------------------------|
 | **Functional Behavior** | ✅ Correct waveform, incrementing and then decrementing digital values | ✅ Identical functional behavior maintained |
 | **Signal Values** | Match expected sequence | Match expected sequence (same as RTL) |
-| **Waveforms** |  |  |
+| **Waveforms** |  <img width="1920" height="1080" alt="Screenshot from 2025-10-04 16-22-44" src="https://github.com/user-attachments/assets/6107a2f2-8ece-43ea-86ce-de3ace828784" /> | <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ab33e6b4-e022-4926-84e6-7afa954dd058" /> |
 
 ---
 
