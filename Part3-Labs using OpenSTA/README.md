@@ -17,27 +17,40 @@
 
 ### 2. The Synopsys Design Constraints (`.sdc`) File 📝
 
-The `.sdc` file containts the constraints which 
+The **`.sdc` (Synopsys Design Constraints)** file contains all the **timing and design intent constraints** used by STA tools. It defines how the tool interprets **clocking, input/output delays, loads, and operating conditions** to analyze timing paths correctly.
 
-  * **`create_clock`**: Defines a clock signal.
-      * **`-period`**: Specifies the clock's period (e.g., `20.0` for 20 ns, which is 50 MHz).
-      * **`-waveform`**: Describes the rising and falling edges (e.g., `{0 10}` for a 20 ns clock that rises at 0 ns and falls at 10 ns).
-      * **`[get_ports {clk}]`**: Associates this clock definition with a specific port on your design.
-  * **`set_input_delay` / `set_output_delay`**: These commands model the timing of external circuits connected to your chip's input and output pins.
-  * **`set_clock_uncertainty`**: This command models real-world clock imperfections like **jitter**, effectively reducing the available time in a clock cycle to ensure a more robust analysis.
+### 🧩 Commonly Used SDC Commands
 
-### 3. Basic OpenSTA Commands
+| **Command**                           | **Purpose**                                                                             | **Key Options / Syntax**                                                                        | **Example**                                                                 |                                             
+| ------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
+| **`create_clock`**                    | Defines a clock signal used for timing analysis.                                        | `create_clock -name <clk_name> -period <time> -waveform {<rise> <fall>} [get_ports <clk_port>]` | `create_clock -name core_clk -period 20.0 -waveform {0 10} [get_ports clk]` |                                             
+| **`set_input_delay`**                 | Models delay between clock edge and when input data arrives at the chip.                | `set_input_delay <value> -clock <clk_name> [get_ports <input_port>]`                            | `set_input_delay 2.0 -clock core_clk [get_ports data_in]`                   |                                             
+| **`set_output_delay`**                | Models delay between clock edge and when output data must be valid for the next device. | `set_output_delay <value> -clock <clk_name> [get_ports <output_port>]`                          | `set_output_delay 2.5 -clock core_clk [get_ports data_out]`                 |                                             
+| **`set_clock_uncertainty`**           | Accounts for clock jitter, skew, and other uncertainties.                               | `set_clock_uncertainty <value> [get_clocks <clk_name>]`                                         | `set_clock_uncertainty 0.2 [get_clocks core_clk]`                           |                                             
+| **`set_input_transition`**            | Defines input signal transition time (slew).                                            | `set_input_transition <value> [get_ports <input_port>]`                                         | `set_input_transition 0.1 [get_ports data_in]`                              |                                             
+| **`set_load`**                        | Specifies the capacitive load seen by an output port.                                   | `set_load <cap_value> [get_ports <output_port>]`                                                | `set_load 0.05 [get_ports data_out]`                                        |                                             
+| **`set_driving_cell`**                | Models a specific driving cell for inputs (to emulate realistic driver strength).       | `set_driving_cell -lib_cell <cell_name> [get_ports <input_port>]`                               | `set_driving_cell -lib_cell INVX4 [get_ports data_in]`                      |                                             
+| **`set_false_path`**                  | Excludes specific paths from timing analysis (e.g., asynchronous or test paths).        | `set_false_path -from [get_ports <src>] -to [get_ports <dst>]`                                  | `set_false_path -from [get_ports rst_n] -to [get_ports data_out]`           |                                             
+| **`set_multicycle_path`**             | Defines timing paths that take more than one clock cycle to complete.                   | `set_multicycle_path <cycles> -from [get_ports <src>] -to [get_ports <dst>]`                    | `set_multicycle_path 2 -from [get_ports data_in] -to [get_ports data_out]`  |                                             
+| **`set_max_delay` / `set_min_delay`** | Overrides default max/min delay values for a path.                                      | `set_max_delay <value> -from <start> -to <end>`                                                 | `set_max_delay 10 -from [get_ports data_in] -to [get_ports data_out]`       |                                             
+| **`set_disable_timing`**              | Disables timing checks on specific arcs (useful for non-timing control signals).        | `set_disable_timing -from <pin> -to <pin>`                                                      | `set_disable_timing -from u1/A -to u1/Y`                                    |                                             
 
-You typically run OpenSTA in an interactive shell. The commands are entered in a logical sequence to load the design, apply constraints, and run the analysis.
+### 3. Basic OpenSTA Commands ⚙️
 
-| Command | Purpose |
-| :--- | :--- |
-| **`read_liberty <file.lib>`** | Loads the standard cell timing library. |
-| **`read_verilog <file.v>`** | Reads the synthesized gate-level netlist. |
-| **`link_design <top_module_name>`** | Links the netlist instances to their definitions in the library. |
-| **`read_sdc <file.sdc>`** | Reads the design constraints and applies them to the design. |
-| **`report_checks`** | Reports potential issues, like paths that aren't constrained. |
-| **`report_timing`** | **This is the main command.** It performs the analysis and generates the timing report for the most critical paths. |
+You typically run **OpenSTA** (Static Timing Analyzer) either in an **interactive shell** or by providing a **TCL script**. The commands must be entered in a logical sequence to load the libraries, design netlist, timing constraints, and then perform timing analysis.
+
+### Common OpenSTA Tcl Commands
+
+| **Command** | **Purpose** | **Common Syntax** | **Example** |
+| :--- | :--- | :--- | :--- |
+| **`read_liberty`** | Loads a standard cell timing library (`.lib`). Use `-max` for setup checks (slow corner) and `-min` for hold checks (fast corner). | `read_liberty [-max \| -min] <path_to_lib.lib>` | `read_liberty -max slow.lib`<br>`read_liberty -min fast.lib` |
+| **`read_verilog`** | Reads the synthesized gate-level Verilog netlist into the tool. | `read_verilog <path_to_netlist.v>` | `read_verilog my_design.synth.v` |
+| **`link_design`** | Links the netlist instances to the corresponding cells in the loaded libraries. The argument must be the top-level module name. | `link_design <top_module_name>` | `link_design vsdbabysoc` |
+| **`create_clock`** | Defines a clock source, specifying its period and the port where it's applied. This is the most fundamental timing constraint. | `create_clock -name <clk_name> -period <val> [get_ports <port>]` | `create_clock -name sys_clk -period 10.0 [get_ports clk]` |
+| **`read_sdc`** | Reads a Synopsys Design Constraints (`.sdc`) file, which contains all timing constraints (`create_clock`, I/O delays, false paths, etc.). | `read_sdc <path_to_sdc_file>` | `read_sdc my_design.sdc` |
+| **`report_checks`** | Reports **detailed timing path information**, including delay, required time, and slack for setup (max) and hold (min) paths. | `report_checks [-path_delay min_max] [-digits <N>]` | `report_checks -path_delay min_max -digits 4` |
+
+
 
 ### 4. Walkthrough of a Basic Example
 
