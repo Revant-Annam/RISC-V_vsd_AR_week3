@@ -133,7 +133,7 @@ opt
 ```
 - Runs a series of optimization passes on the partially mapped design.
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/f7f8fbd3-377e-45b8-bb85-8ae336d3c9cf" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5034f875-111c-4496-9e82-fe4ab934e845" />
 
 
 ####
@@ -143,7 +143,8 @@ abc -liberty ./lib/sky130_fd_sc_hd__tt_025C_1v80.lib
 - This is the **core technology mapping step** where combinational logic is mapped to actual SKY130 gates.
 - This single command determines the area, delay, and power of your entire synthesized design. The quality of ABC's mapping directly impacts chip performance.
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/300e8508-83ff-49ef-a731-8d4d30664ac4" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/563bde01-7481-435e-a213-9dbb232088a5" />
+
 
 <img width="1909" height="760" alt="image" src="https://github.com/user-attachments/assets/e7c9a7e6-8123-4c22-a49e-d0bd7840d221" />
 
@@ -162,9 +163,8 @@ flatten
 - To view the hierarchical design we can use `show vsdbabysoc` before the `flatten` command.
 
 The hierarchical synthesized output:
-<img width="1906" height="1044" alt="image" src="https://github.com/user-attachments/assets/ca0f0fa4-40b1-4ed0-9372-06f4882e5799" />
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/ecb78d48-ebc2-463a-9015-3188cc26e8f6" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/00b4df10-aa77-42e5-85d1-e4399b44b59c" />
 
 
 ####
@@ -180,7 +180,7 @@ clean -purge
 ```
 - Performs a final, aggressive cleanup of the netlist.
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/d31bc0c7-97e2-42e6-b5ec-274f7dc5acbe" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/eaeb7d8b-15da-43ea-b423-fae23f7da1d1" />
 
 
 ####
@@ -277,7 +277,7 @@ write_verilog -noattr ../output/synth/vsdbabysoc.synth.v
 - Post-synthesis simulation (Gate-Level Simulation)
 - Static Timing Analysis (STA)
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/aecf70d3-9566-4c3c-baca-eb72b7268e1c" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fe9758a9-d638-4795-89d0-b48520dd8aef" />
 
 
 ---
@@ -354,7 +354,7 @@ cp ~/VLSI/VSDBabySoC/output/synth/vsdbabysoc.synth.v ~/VLSI/VSDBabySoC/src/modul
 ```
 - Copies the gate-level netlist (output of Yosys) into the directory where simulation will be run.
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/f356ea5e-1904-4c42-98dc-51731a973d33" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b222b1ac-bec4-4aed-b907-71b2ac286cf3" />
 
 
 ---
@@ -406,15 +406,17 @@ iverilog -o ~/VLSI/VSDBabySoC/output/post_synth_sim/post_synth_sim.out \
 - The top-level file to compile
 - Iverilog starts here and recursively compiles all dependencies
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0f68cf6e-1326-44ce-90be-6c277808a8e4" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0d90cea3-29a9-409d-bd24-f72f9c13e5ad" />
+
 
 To solve the error we have to comment this:
 
-<img width="1520" height="904" alt="image" src="https://github.com/user-attachments/assets/8c3a8866-c8b4-4636-8a99-8117ec81d2b0" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/09d995e6-8fcb-4190-bc62-feec53cc0f4b" />
+
 
 After commenting:
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/666c65e0-0a6b-422d-b7bf-932274f18f6d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0543153f-8e50-43e3-972b-1500b5428b33" />
 
 
 ---
@@ -443,7 +445,7 @@ gtkwave post_synth_sim.vcd
 ```
 - Launches the GTKWave waveform viewer to visually inspect simulation results.
 
-<img width="1854" height="1048" alt="image" src="https://github.com/user-attachments/assets/802a02d8-3272-49c8-914e-01354aa707bc" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/02015c45-4304-4496-a38d-e3852e9c8c8e" />
 
 
 ---
@@ -451,11 +453,14 @@ gtkwave post_synth_sim.vcd
 ### Post-Synthesis Simulation Waveform
 
 In the GTKWave viewer, right-click on the `OUT[9:0]` signal. From the context menu that appeared, navigate to `Data Format`, then to the `Analog` sub-menu, and finally select `Step`.
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b02552a2-f401-4ebc-9bfa-d2cb551a5806" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/96f90f9d-f33a-4b59-8472-ebed2f497f52" />
+
 
 This is done to change the visual drawing style of the analog waveform for better analysis.
 
-<img width="1856" height="1019" alt="image" src="https://github.com/user-attachments/assets/ab33e6b4-e022-4926-84e6-7afa954dd058" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ed6d3d11-9b0a-46a2-a583-4c9d76804b13" />
+
 
 *The above waveform shows the VSDBabySoC behavior after synthesis, with realistic gate delays included.*
 
