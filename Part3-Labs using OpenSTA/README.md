@@ -43,11 +43,9 @@ You typically run OpenSTA in an interactive shell. The commands are entered in a
 
 #### **Objective**
 
-Find the worst-case (most negative) setup slack in the design.
+Find the worst-case hold and setup slack in the netlist (example1.v).
 
 #### **Commands to Enter**
-
-*(I will await your specific commands and output, but the sequence will look like this)*
 
 ```tcl
 # In the OpenSTA shell
