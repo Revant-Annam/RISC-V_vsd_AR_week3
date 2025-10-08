@@ -17,7 +17,7 @@
 
 ### 2. The Synopsys Design Constraints (`.sdc`) File 📝
 
-The `.sdc` file communicates your design intent and performance goals. The file contains a series of commands. Some of the important commands are:
+The `.sdc` file containts the constraints which 
 
   * **`create_clock`**: Defines a clock signal.
       * **`-period`**: Specifies the clock's period (e.g., `20.0` for 20 ns, which is 50 MHz).
