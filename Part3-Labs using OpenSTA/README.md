@@ -41,6 +41,22 @@ You typically run OpenSTA in an interactive shell. The commands are entered in a
 
 ### 4. Walkthrough of a Basic Example
 
+#### **Netlist**
+
+```verilog
+module top (in1, in2, clk1, clk2, clk3, out);
+  input in1, in2, clk1, clk2, clk3;
+  output out;
+  wire r1q, r2q, u1z, u2z;
+
+  DFF_X1 r1 (.D(in1), .CK(clk1), .Q(r1q));
+  DFF_X1 r2 (.D(in2), .CK(clk2), .Q(r2q));
+  BUF_X1 u1 (.A(r2q), .Z(u1z));
+  AND2_X1 u2 (.A1(r1q), .A2(u1z), .ZN(u2z));
+  DFF_X1 r3 (.D(u2z), .CK(clk3), .Q(out));
+endmodule 
+```
+
 #### **Objective**
 
 Find the worst-case hold and setup slack in the netlist (example1.v).
@@ -48,39 +64,99 @@ Find the worst-case hold and setup slack in the netlist (example1.v).
 #### **Commands to Enter**
 
 ```tcl
-# In the OpenSTA shell
-# 1. Load the library
-read_liberty path/to/sample_library.lib
+# --- OpenSTA Timing Analysis Script for example1 ---
 
-# 2. Load the design
-read_verilog path/to/sample_design.v
+# 1. Load the Standard Cell Library
+# This command reads the Nangate 45nm library. The .lib file is crucial as it
+# contains all the timing information (propagation delays, setup/hold times) for
+# the logic gates used in the design.
+read_liberty /OpenSTA/examples/nangate45_typ.lib.gz
 
-# 3. Link the design
-link_design top_module_of_sample
+# 2. Read the Synthesized Netlist
+# This reads the gate-level Verilog file that describes the circuit's structure
+# and the interconnection of all the logic gates.
+read_verilog /OpenSTA/examples/example1.v
 
-# 4. Apply constraints
-read_sdc path/to/sample_constraints.sdc
+# 3. Link the Design to the Library
+# This essential step connects the gates in the Verilog netlist to their
+# corresponding timing models in the loaded library, making the design "timing-aware."
+link_design top
 
-# 5. Run the analysis and generate the report
-report_timing -nworst 5 > timing_report.txt
+# 4. Define the Clock Constraint
+# This is the most important constraint. It sets the performance target by defining
+# a clock named 'clk' with a 10ns period (100 MHz frequency) and applies this
+# constraint to the design's three clock input ports.
+create_clock -name clk -period 10 {clk1 clk2 clk3}
 
-# 6. Exit
+# 5. Define Input Delays
+# This command models the external world. It tells the tool that for any timing
+# path starting at inputs 'in1' or 'in2', the data signal arrives 1ns *after*
+# the rising edge of the 'clk'.
+set_input_delay -clock clk 1 {in1 in2}
+
+# 6. Perform a Preliminary Check (Optional, but good practice)
+# This command finds the raw longest (max) and shortest (min) combinational path
+# delays. It's not a full timing report with slack, but it gives a quick
+# indication of the design's overall speed.
+report_checks -path_delay min_max
+
+# 7. Generate the Full Setup Timing Report
+# This is the main analysis command. It performs a full setup analysis and generates
+# a detailed report for the 10 worst-offending paths. The report will show the
+# complete delay breakdown, the required time, and the final slack value.
+# The output of this command is what you analyze for timing violations.
+report_timing -nworst 10
+
+# 8. Exit the Tool
+# Exits the OpenSTA interactive shell.
 exit
 ```
 
 #### **Output Received**
 
-*(Here you would paste the content of `timing_report.txt`)*
+<img width="1920" height="1080" alt="Screenshot from 2025-10-08 21-32-35" src="https://github.com/user-attachments/assets/2888c77e-521c-4a00-804b-bb239584b469" />
+
+
+<img width="1920" height="1080" alt="Screenshot from 2025-10-08 21-32-52" src="https://github.com/user-attachments/assets/1d8afc2f-08d3-4aac-860a-5876a314457a" />
+
 
 #### **Analysis of the Output**
 
-When you look at the report, you'll analyze it by identifying these key parts for the worst path:
+* **Hold Analysis:** 
 
-1.  **Startpoint**: The flip-flop where the path begins.
-2.  **Endpoint**: The flip-flop where the path ends.
-3.  **Data Arrival Time**: The total time it took for the signal to travel from the startpoint to the endpoint. This is the sum of all cell and net delays listed in the first part of the report.
-4.  **Data Required Time**: The "deadline" by which the signal must arrive. This is calculated from the next clock edge, minus the destination flip-flop's setup time and any clock uncertainty.
-5.  **Slack**: This is the most important number. It's the difference between the **Required Time** and the **Arrival Time**. If it's positive, the path passes. If it's negative, it's a timing violation. ❌
+1.  **Startpoint**: in1 (input port clocked by clk)
+2.  **Endpoint:** r1 (rising edge-triggered flip-flop clocked by clk)
+3.  **Path Group:** clk (the timing path is being analyzed)
+4.  **Path Type:** min (the analysis is a hold time check)
+5.  **Data Arrival Time**: The earliest possible time a signal can travel from its startpoint to its endpoint which is the sum of min delays in the timing path.
+6.  **Data Required Time**: The earliest moment the data is allowed to change at the input of the capture flip-flop. 
+7.  **Slack**: This is the difference between the **Arrival Time** and the **Required Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 0.10ns which is positive and hence there is no timing violation. 
+
+Slack calculation:
+
+$$Slack_{hold} = \text{Arrival Time}_{min} - \text{Required Time}_{min}$$
+
+Hold time constraint:
+
+$$T_{cq_{min}} + T_{logic_{min}} > T_{hold}$$
+
+* **Setup Analysis:** 
+
+1.  **Startpoint**: r2 (rising edge-triggered flip-flop clocked by clk)
+2.  **Endpoint:** r3 (rising edge-triggered flip-flop clocked by clk)
+3.  **Path Group:** clk (the timing path is being analyzed)
+4.  **Path Type:** max (the analysis is a setup time check)
+5.  **Data Arrival Time**: The latest possible time a signal can travel from its startpoint to its endpoint which is the sum of max delays in the timing path.
+6.  **Data Required Time**: The time by which the data must arrive at the capture flip-flop's input to be reliably captured by the next clock edge.
+7.  **Slack**: This is the difference between the **Required Time** and the **Arrival Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 9.83ns which is positive and hence there is no timing violation. 
+
+Slack calculation:
+
+$$Slack_{setup} = \text{Required Time}_{max} - \text{Arrival Time}_{max}$$
+
+Setup time constraint:
+
+$$T_{cq_{max}} + T_{logic_{max}} + T_{setup} < \text{Clock Period}$$
 
 -----
 
