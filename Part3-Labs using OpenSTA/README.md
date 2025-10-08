@@ -21,19 +21,27 @@ The **`.sdc` (Synopsys Design Constraints)** file contains all the **timing and 
 
 ### 🧩 Commonly Used SDC Commands
 
-| **Command**                           | **Purpose**                                                                             | **Key Options / Syntax**                                                                        | **Example**                                                                 |                                             
-| ------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------- |
-| **`create_clock`**                    | Defines a clock signal used for timing analysis.                                        | `create_clock -name <clk_name> -period <time> -waveform {<rise> <fall>} [get_ports <clk_port>]` | `create_clock -name core_clk -period 20.0 -waveform {0 10} [get_ports clk]` |                                             
-| **`set_input_delay`**                 | Models delay between clock edge and when input data arrives at the chip.                | `set_input_delay <value> -clock <clk_name> [get_ports <input_port>]`                            | `set_input_delay 2.0 -clock core_clk [get_ports data_in]`                   |                                             
-| **`set_output_delay`**                | Models delay between clock edge and when output data must be valid for the next device. | `set_output_delay <value> -clock <clk_name> [get_ports <output_port>]`                          | `set_output_delay 2.5 -clock core_clk [get_ports data_out]`                 |                                             
-| **`set_clock_uncertainty`**           | Accounts for clock jitter, skew, and other uncertainties.                               | `set_clock_uncertainty <value> [get_clocks <clk_name>]`                                         | `set_clock_uncertainty 0.2 [get_clocks core_clk]`                           |                                             
-| **`set_input_transition`**            | Defines input signal transition time (slew).                                            | `set_input_transition <value> [get_ports <input_port>]`                                         | `set_input_transition 0.1 [get_ports data_in]`                              |                                             
-| **`set_load`**                        | Specifies the capacitive load seen by an output port.                                   | `set_load <cap_value> [get_ports <output_port>]`                                                | `set_load 0.05 [get_ports data_out]`                                        |                                             
-| **`set_driving_cell`**                | Models a specific driving cell for inputs (to emulate realistic driver strength).       | `set_driving_cell -lib_cell <cell_name> [get_ports <input_port>]`                               | `set_driving_cell -lib_cell INVX4 [get_ports data_in]`                      |                                             
-| **`set_false_path`**                  | Excludes specific paths from timing analysis (e.g., asynchronous or test paths).        | `set_false_path -from [get_ports <src>] -to [get_ports <dst>]`                                  | `set_false_path -from [get_ports rst_n] -to [get_ports data_out]`           |                                             
-| **`set_multicycle_path`**             | Defines timing paths that take more than one clock cycle to complete.                   | `set_multicycle_path <cycles> -from [get_ports <src>] -to [get_ports <dst>]`                    | `set_multicycle_path 2 -from [get_ports data_in] -to [get_ports data_out]`  |                                             
-| **`set_max_delay` / `set_min_delay`** | Overrides default max/min delay values for a path.                                      | `set_max_delay <value> -from <start> -to <end>`                                                 | `set_max_delay 10 -from [get_ports data_in] -to [get_ports data_out]`       |                                             
-| **`set_disable_timing`**              | Disables timing checks on specific arcs (useful for non-timing control signals).        | `set_disable_timing -from <pin> -to <pin>`                                                      | `set_disable_timing -from u1/A -to u1/Y`                                    |                                             
+Of course. Here is a clean, well-formatted table of common SDC (Synopsys Design Constraints) commands used in Static Timing Analysis.
+
+***
+
+### ## Common SDC Timing Commands
+
+| **Command** | **Purpose** | **Common Syntax** | **Example** |
+| :--- | :--- | :--- | :--- |
+| **`create_clock`** | Defines a primary clock signal, specifying its period and waveform. | `create_clock -name <clk_name> -period <time> [get_ports <port>]` | `create_clock -name core_clk -period 10.0 [get_ports clk]` |
+| **`create_generated_clock`** | Defines a clock that is derived from another clock, such as by a divider or multiplier. | `create_generated_clock -name <new_clk> -source <master_pin> -divide_by <N>` | `create_generated_clock -name clk_div2 -source u_div/CLK -divide_by 2` |
+| **`set_input_delay`** | Models the external delay on an input port, relative to a clock edge. | `set_input_delay <value> -clock <clk_name> [get_ports <input_port>]` | `set_input_delay 2.5 -clock core_clk [get_ports data_in[*]]` |
+| **`set_output_delay`** | Models the external timing requirement for an output port, relative to a clock edge. | `set_output_delay <value> -clock <clk_name> [get_ports <output_port>]` | `set_output_delay 3.0 -clock core_clk [get_ports data_out[*]]` |
+| **`set_clock_uncertainty`** | Specifies a margin to account for clock jitter and skew, tightening timing checks. | `set_clock_uncertainty <value> [get_clocks <clk_name>]` | `set_clock_uncertainty 0.25 [get_clocks core_clk]` |
+| **`set_clock_latency`** | Models the clock network's insertion delay from the source to the register clock pins. | `set_clock_latency [-source] <value> [get_clocks <clk_name>]` | `set_clock_latency -source 1.8 [get_clocks core_clk]` |
+| **`set_driving_cell`** | Models an input port being driven by a specific library cell for more accurate slew calculation. | `set_driving_cell -lib_cell <cell> [get_ports <input_port>]` | `set_driving_cell -lib_cell BUFX2 [get_ports enable]` |
+| **`set_load`** | Specifies the capacitive load (in pF or fF) that an output port must drive. | `set_load <capacitance> [get_ports <output_port>]` | `set_load 0.05 [get_ports data_out[7]]` |
+| **`set_max_fanout`** | A design rule that limits the number of gates an output pin can drive. | `set_max_fanout <value> [get_ports <port_name>]` | `set_max_fanout 16 [all_inputs]` |
+| **`set_max_transition`** | A design rule that limits the signal transition time (slew) on nets to ensure signal integrity. | `set_max_transition <time> [current_design]` | `set_max_transition 0.6 [current_design]` |
+| **`set_false_path`** | Instructs the timing analyzer to ignore a specific path (e.g., asynchronous reset). | `set_false_path -from <startpoint> -to <endpoint>` | `set_false_path -from [get_ports rst_n] -to [all_registers]` |
+| **`set_multicycle_path`** | Specifies that a path is allowed to take multiple clock cycles to propagate. | `set_multicycle_path <N> -setup -from <startpoint> -to <endpoint>` | `set_multicycle_path 2 -setup -from [get_pins data_reg[*]/Q]` |
+| **`set_disable_timing`** | Breaks a timing arc within a cell, preventing timing analysis through it. | `set_disable_timing -from <pin_name> -to <pin_name>` | `set_disable_timing -from u_mux/S -to u_mux/Y` |                                        
 
 ### 3. Basic OpenSTA Commands ⚙️
 
@@ -52,7 +60,10 @@ You typically run **OpenSTA** (Static Timing Analyzer) either in an **interactiv
 
 
 
-### 4. Walkthrough of a Basic Example
+### 4. Starting OpenSTA
+
+
+### 5. Walkthrough of a Basic Example
 
 #### **Netlist**
 
@@ -135,15 +146,14 @@ exit
 
 #### **Analysis of the Output**
 
-* **Hold Analysis:** 
-
-1.  **Startpoint**: in1 (input port clocked by clk)
-2.  **Endpoint:** r1 (rising edge-triggered flip-flop clocked by clk)
-3.  **Path Group:** clk (the timing path is being analyzed)
-4.  **Path Type:** min (the analysis is a hold time check)
-5.  **Data Arrival Time**: The earliest possible time a signal can travel from its startpoint to its endpoint which is the sum of min delays in the timing path.
-6.  **Data Required Time**: The earliest moment the data is allowed to change at the input of the capture flip-flop. 
-7.  **Slack**: This is the difference between the **Arrival Time** and the **Required Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 0.10ns which is positive and hence there is no timing violation. 
+* **Hold Analysis:**
+  1.  **Startpoint**: in1 (input port clocked by clk)
+  2.  **Endpoint:** r1 (rising edge-triggered flip-flop clocked by clk)
+  3.  **Path Group:** clk (the timing path is being analyzed)
+  4.  **Path Type:** min (the analysis is a hold time check)
+  5.  **Data Arrival Time**: The earliest possible time a signal can travel from its startpoint to its endpoint which is the sum of min delays in the timing path.
+  6.  **Data Required Time**: The earliest moment the data is allowed to change at the input of the capture flip-flop.
+  7.  **Slack**: This is the difference between the **Arrival Time** and the **Required Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 0.10ns which is positive and hence there is no timing violation. 
 
 Slack calculation:
 
@@ -153,15 +163,14 @@ Hold time constraint:
 
 $$T_{cq_{min}} + T_{logic_{min}} > T_{hold}$$
 
-* **Setup Analysis:** 
-
-1.  **Startpoint**: r2 (rising edge-triggered flip-flop clocked by clk)
-2.  **Endpoint:** r3 (rising edge-triggered flip-flop clocked by clk)
-3.  **Path Group:** clk (the timing path is being analyzed)
-4.  **Path Type:** max (the analysis is a setup time check)
-5.  **Data Arrival Time**: The latest possible time a signal can travel from its startpoint to its endpoint which is the sum of max delays in the timing path.
-6.  **Data Required Time**: The time by which the data must arrive at the capture flip-flop's input to be reliably captured by the next clock edge.
-7.  **Slack**: This is the difference between the **Required Time** and the **Arrival Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 9.83ns which is positive and hence there is no timing violation. 
+* **Setup Analysis:**
+  1.  **Startpoint**: r2 (rising edge-triggered flip-flop clocked by clk)
+  2.  **Endpoint:** r3 (rising edge-triggered flip-flop clocked by clk)
+  3.  **Path Group:** clk (the timing path is being analyzed)
+  4.  **Path Type:** max (the analysis is a setup time check)
+  5.  **Data Arrival Time**: The latest possible time a signal can travel from its startpoint to its endpoint which is the sum of max delays in the timing path.
+  6.  **Data Required Time**: The time by which the data must arrive at the capture flip-flop's input to be reliably captured by the next clock edge.
+  7.  **Slack**: This is the difference between the **Required Time** and the **Arrival Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 9.83ns which is positive and hence there is no timing violation. 
 
 Slack calculation:
 
@@ -173,50 +182,82 @@ $$T_{cq_{max}} + T_{logic_{max}} + T_{setup} < \text{Clock Period}$$
 
 -----
 
-### \#\# Performing STA on `VSDBabySoC` 📈
-
-Now, let's apply this to your own project.
+### Performing STA on `VSDBabySoC` 📈
 
 #### **Step 1: Prerequisites**
 
-Make sure you have the following files ready:
-
-  * Your synthesized netlist: `vsdbabysoc.synth.v`
-  * The SKY130 Liberty file: `sky130_fd_sc_hd__tt_025C_1v80.lib`
-
-#### **Step 2: Create the `vsdbabysoc.sdc` File**
-
-Create a new file named `vsdbabysoc.sdc`. Let's target a **50 MHz clock (20 ns period)**.
+In the `VLSI/VSDBabySoC/src` directory I have made a `vsdbabysoc_min_max_delays.tcl` for perfoming the setup and hold time checks for the VSDBabySoC. The contents of `.tcl` file can be run individually in the OpenSTA tool also. The contents of the file:
 
 ```tcl
-# vsdbabysoc.sdc
-# Target clock frequency: 50 MHz
+# Liberty files
+read_liberty -min /data/VLSI/VSDBabySoC/src/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_liberty -max /data/VLSI/VSDBabySoC/src/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_liberty -min /data/VLSI/VSDBabySoC/src/lib/avsdpll.lib
+read_liberty -max /data/VLSI/VSDBabySoC/src/lib/avsdpll.lib
+read_liberty -min /data/VLSI/VSDBabySoC/src/lib/avsddac.lib
+read_liberty -max /data/VLSI/VSDBabySoC/src/lib/avsddac.lib
 
-# Define the clock on the 'clk' port with a 20ns period
-create_clock -period 20.0 [get_ports {clk}]
+# Synthesized design
+read_verilog /data/VLSI/VSDBabySoC/output/synth/vsdbabysoc.synth.v
 
-# Add a small amount of uncertainty to account for jitter
-set_clock_uncertainty 0.2 [get_clocks *]
-```
-
-*(Note: Ensure `clk` is the correct name of your top-level clock port.)*
-
-#### **Step 3: Run OpenSTA**
-
-Launch OpenSTA (`sta`) and run the following commands, replacing the paths with your own.
-
-```tcl
-# In the OpenSTA shell
-read_liberty /path/to/your/libs/sky130_fd_sc_hd__tt_025C_1v80.lib
-
-read_verilog /path/to/your/output/vsdbabysoc.synth.v
-
+# Link top module
 link_design vsdbabysoc
 
-read_sdc /path/to/your/src/vsdbabysoc.sdc
+# SDC constraints
+read_sdc /data/VLSI/VSDBabySoC/src/sdc/vsdbabysoc_synthesis.sdc
 
-report_timing -nworst 10 > vsdbabysoc_timing_report.txt
+# Timing report
+report_checks
 ```
+
+#### **Step 2: Correcting the error**
+
+With the help of docker command we can run the `.tcl` file,
+
+```
+docker run -it -v $HOME:/data opensta /data/VLSI/VSDBabySoC/src/vsdbabysoc_min_max_delays.tcl
+```
+
+But this resulted in the following error,
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3ec40dbb-5122-4a09-a864-ce13a9d3ca56" />
+
+This error occurs because the Liberty (.lib) file format does not support // for single-line comments. The parser fails when it finds this syntax, especially when a { character follows it. To fix this, inspect avsdpll.lib around line 54 and correct the comment formatting.
+
+In the `avsdpll.lib` line 54:
+```
+//pin (GND#2) {
+//  direction : input;
+//  max_transition : 2.5;
+//  capacitance : 0.001;
+//}
+```
+
+This needs to be converted into:
+```
+/*
+pin (GND#2) {
+  direction : input;
+  max_transition : 2.5;
+  capacitance : 0.001;
+}
+*/
+```
+
+A similar error occured in line 68.
+
+#### **Step 3: Run `.tcl` file in OpenSTA**
+
+After correcting the errors using the same docker command we can run the `.tcl` file. The timing report generated is 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/972afbc2-299e-4aa1-a506-5e15fa17675e" />
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/09ec4f40-b4af-4b59-800b-92f208e80a6e" />
+
+
+As the slack is positive for both the hold and setup time analysis there is no timing violation.
+
 
 #### **Step 4: Analyze Your Report**
 
