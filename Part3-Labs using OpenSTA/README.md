@@ -7,13 +7,19 @@
 ### 1. OpenSTA: Inputs and Outputs ⚙️
 
 * **Inputs:** OpenSTA needs three essential files to perform its analysis:
-  1.  **Synthesized Netlist (`.v`):** This is the gate-level Verilog file produced by your synthesis tool (Yosys). It describes your design as a network of standard cells. **This is the circuit to be analyzed.**
+  1.  **Synthesized Netlist (`.v`):** This is the gate-level Verilog file produced by your synthesis tool (like Yosys). It describes your design as a network of standard cells. **This is the circuit to be analyzed.**
   2.  **Standard Cell Library (`.lib`):** This is the Liberty timing library for your technology (e.g., SKY130). It contains the timing information for every logic gate, including propagation delays, setup times, and hold times. **This file defines how fast the circuit's components are.**
   3.  **Synopsys Design Constraints (`.sdc`):** This is a text file you create. It defines the timing requirements for your design, such as the clock period and I/O delays. **This file sets the performance goals the circuit must meet.**
+  4.  **Standard Delay Format (`.sdf`) (After placement):** Generated after Place & Route, this file contains accurate, post-layout timing delays for both cells and interconnecting wires. It's used to "back-annotate" the design for a highly realistic timing check. **This file provides the *actual* cell and wire delays after layout.**
+  5.  **Standard Parasitic Exchange Format (`.spef`) (After placement):** Also generated after Place & Route, this file details the parasitic resistance and capacitance (RC) of the physical wires. The timing tool uses this information to calculate precise net delays. **This file describes the physical properties of the wires.**
 
 * **Outputs:** The primary output of OpenSTA is not a file but text-based information printed to the console (which you can redirect to a file).
   1.  **Timing Reports:** This is the main output, showing detailed information about the timing paths in your design, including the calculated **slack**.
   2.  **Checks and Status Reports:** These are useful for debugging, highlighting issues like unconstrained paths or un-clocked registers.
+
+<p align = "center">
+  <img width="450" height="300" alt="image" src="https://github.com/user-attachments/assets/cdda71d1-9a02-4bb0-8e6b-0e19ee4ce535" />
+</p>
 
 ### 2. The Synopsys Design Constraints (`.sdc`) File 📝
 
@@ -25,7 +31,7 @@ Of course. Here is a clean, well-formatted table of common SDC (Synopsys Design 
 
 ***
 
-### ## Common SDC Timing Commands
+### Common SDC Timing Commands
 
 | **Command** | **Purpose** | **Common Syntax** | **Example** |
 | :--- | :--- | :--- | :--- |
@@ -116,20 +122,13 @@ create_clock -name clk -period 10 {clk1 clk2 clk3}
 # This command models the external world. It tells the tool that for any timing
 # path starting at inputs 'in1' or 'in2', the data signal arrives 1ns *after*
 # the rising edge of the 'clk'.
-set_input_delay -clock clk 1 {in1 in2}
+set_input_delay -clock clk 0.1 {in1 in2}
 
 # 6. Perform a Preliminary Check (Optional, but good practice)
 # This command finds the raw longest (max) and shortest (min) combinational path
 # delays. It's not a full timing report with slack, but it gives a quick
 # indication of the design's overall speed.
 report_checks -path_delay min_max
-
-# 7. Generate the Full Setup Timing Report
-# This is the main analysis command. It performs a full setup analysis and generates
-# a detailed report for the 10 worst-offending paths. The report will show the
-# complete delay breakdown, the required time, and the final slack value.
-# The output of this command is what you analyze for timing violations.
-report_timing -nworst 10
 
 # 8. Exit the Tool
 # Exits the OpenSTA interactive shell.
