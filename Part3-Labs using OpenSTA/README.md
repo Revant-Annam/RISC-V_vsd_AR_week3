@@ -365,69 +365,60 @@ The script you provided loops through *all* available libraries, which is great 
 This improved script targets only the four most critical corners (two for setup, two for hold) to ensure your design's robustness efficiently.
 
 ```tcl
-# --- 1. Setup Paths and Design Info ---
-set DESIGN_NAME "vsdbabysoc"
-
-# Paths for your setup
+# --- 1. Setup Paths ---
 set LIB_DIR       "/data/VLSI/VSDBabySoC/skywater-pdk-libs-sky130_fd_sc_hd/timing"
 set MACRO_LIB_DIR "/data/VLSI/VSDBabySoC/src/lib"
 set VERILOG_FILE  "/data/VLSI/VSDBabySoC/src/module/vsdbabysoc.synth.v"
 set SDC_FILE      "/data/VLSI/VSDBabySoC/src/sdc/vsdbabysoc_synthesis.sdc"
 set OUTPUT_DIR    "/data/VLSI/VSDBabySoC/STA_reports"
 
-# Create the output directory
+# Create the output directory if it doesn't exist
 exec mkdir -p $OUTPUT_DIR
 
-
-# --- 2. Define Library Corners for Analysis ---
-set all_corners {
-    "sky130_fd_sc_hd__tt_025C_1v80.lib"
-    "sky130_fd_sc_hd__ff_100C_1v65.lib"
-    "sky130_fd_sc_hd__ff_100C_1v95.lib"
-    "sky130_fd_sc_hd__ff_n40C_1v56.lib"
-    "sky130_fd_sc_hd__ff_n40C_1v65.lib"
-    "sky130_fd_sc_hd__ff_n40C_1v76.lib"
-    "sky130_fd_sc_hd__ss_100C_1v40.lib"
-    "sky130_fd_sc_hd__ss_100C_1v60.lib"
-    "sky130_fd_sc_hd__ss_n40C_1v28.lib"
-    "sky130_fd_sc_hd__ss_n40C_1v35.lib"
-    "sky130_fd_sc_hd__ss_n40C_1v40.lib"
-    "sky130_fd_sc_hd__ss_n40C_1v44.lib"
-}
+# --- 2. Define Library Files ---
+set list_of_lib_files(1) "sky130_fd_sc_hd__tt_025C_1v80.lib"
+set list_of_lib_files(2) "sky130_fd_sc_hd__ff_100C_1v65.lib"
+set list_of_lib_files(3) "sky130_fd_sc_hd__ff_100C_1v95.lib"
+set list_of_lib_files(4) "sky130_fd_sc_hd__ff_n40C_1v56.lib"
+set list_of_lib_files(5) "sky130_fd_sc_hd__ff_n40C_1v65.lib"
+set list_of_lib_files(6) "sky130_fd_sc_hd__ff_n40C_1v76.lib"
+set list_of_lib_files(7) "sky130_fd_sc_hd__ss_100C_1v40.lib"
+set list_of_lib_files(8) "sky130_fd_sc_hd__ss_100C_1v60.lib"
+set list_of_lib_files(9) "sky130_fd_sc_hd__ss_n40C_1v28.lib"
+set list_of_lib_files(10) "sky130_fd_sc_hd__ss_n40C_1v35.lib"
+set list_of_lib_files(11) "sky130_fd_sc_hd__ss_n40C_1v40.lib"
+set list_of_lib_files(12) "sky130_fd_sc_hd__ss_n40C_1v44.lib"
 
 
-# --- 3. Loop Through Each Corner and Perform STA ---
-foreach corner $all_corners {
-    reset_design
-    puts "## Analyzing Corner: $corner"
+# --- 3. Load Common Macro Libraries ---
+read_liberty $MACRO_LIB_DIR/avsdpll.lib
+read_liberty $MACRO_LIB_DIR/avsddac.lib
 
-    # Load the corner-specific standard cell library
-    read_liberty -min $LIB_DIR/$corner
-    read_liberty -max $LIB_DIR/$corner
-
-    # Load the macro libraries
-    read_liberty -min $MACRO_LIB_DIR/avsddac.lib
-    read_liberty -max $MACRO_LIB_DIR/avsddac.lib
-    read_liberty -min $MACRO_LIB_DIR/avsdpll.lib
-    read_liberty -max $MACRO_LIB_DIR/avsdpll.lib
-
-    # Load design and constraints
+# --- 4. Loop Through Corners and Generate Reports (Incorrect Methodology) ---
+for {set i 1} {$i <= [array size list_of_lib_files]} {incr i} {
+    # This sequentially adds every library to the same analysis session
+    read_liberty $LIB_DIR/$list_of_lib_files($i)
     read_verilog $VERILOG_FILE
-    link_design $DESIGN_NAME
+    link_design vsdbabysoc
     read_sdc $SDC_FILE
 
-    # --- 4. Generate Reports ---
-    set report_base_name [string map {.lib ""} $corner]
+    # Generate Reports
+    set report_base_name [string map {.lib ""} $list_of_lib_files($i)]
 
-    report_checks -path_delay max -digits 4 > $OUTPUT_DIR/${report_base_name}_setup.txt
-    report_checks -path_delay min -digits 4 > $OUTPUT_DIR/${report_base_name}_hold.txt
+    report_checks -path_delay min_max -fields {nets cap slew input_pins fanout} -digits {4} > $OUTPUT_DIR/${report_base_name}_min_max.txt
 
-    exec echo "--- Corner: $corner ---" >> $OUTPUT_DIR/summary_wns.txt
-    report_wns -digits 4 >> $OUTPUT_DIR/summary_wns.txt
-    
-    exec echo "--- Corner: $corner ---" >> $OUTPUT_DIR/summary_tns.txt
-    report_tns -digits 4 >> $OUTPUT_DIR/summary_tns.txt
+    exec echo "$list_of_lib_files($i)" >> $OUTPUT_DIR/summary_worst_max_slack.txt
+    report_worst_slack -max -digits {4} >> $OUTPUT_DIR/summary_worst_max_slack.txt
+
+    exec echo "$list_of_lib_files($i)" >> $OUTPUT_DIR/summary_worst_min_slack.txt
+    report_worst_slack -min -digits {4} >> $OUTPUT_DIR/summary_worst_min_slack.txt
+
+    exec echo "$list_of_lib_files($i)" >> $OUTPUT_DIR/summary_tns.txt
+    report_tns -digits {4} >> $OUTPUT_DIR/summary_tns.txt
+
+    exec echo "$list_of_lib_files($i)" >> $OUTPUT_DIR/summary_wns.txt
+    report_wns -digits {4} >> $OUTPUT_DIR/summary_wns.txt
 }
 
-puts "## Analysis Complete. Reports are located in: $OUTPUT_DIR"
+puts "## Analysis script finished. Reports are in: $OUTPUT_DIR"
 ```
