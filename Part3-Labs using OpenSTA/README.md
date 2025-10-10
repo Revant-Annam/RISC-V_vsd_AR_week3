@@ -64,10 +64,43 @@ You typically run **OpenSTA** (Static Timing Analyzer) either in an **interactiv
 | **`read_sdc`** | Reads a Synopsys Design Constraints (`.sdc`) file, which contains all timing constraints (`create_clock`, I/O delays, false paths, etc.). | `read_sdc <path_to_sdc_file>` | `read_sdc my_design.sdc` |
 | **`report_checks`** | Reports **detailed timing path information**, including delay, required time, and slack for setup (max) and hold (min) paths. | `report_checks [-path_delay min_max] [-digits <N>]` | `report_checks -path_delay min_max -digits 4` |
 
-
-
 ### 4. Starting OpenSTA
 
+#### **Step 1 -** Build a docker image
+
+Using this command, we can build the image for OpenSTA. It essentially packages the OpenSTA application and all its necessary dependencies into a standardized, portable unit called a Docker image. 📦
+
+`docker build --file Dockerfile.ubuntu22.04 --tag opensta .`
+
+* **`docker build`**: This is the fundamental command that tells the Docker engine to create a new image.
+
+* **`--file Dockerfile.ubuntu22.04`**: This flag specifies the exact "blueprint" file to use for the build. A Dockerfile contains a list of instructions, like installing libraries and copying files, needed to set up the environment. You're telling Docker to use the instructions in the `Dockerfile.ubuntu22.04` file.
+
+* **`--tag opensta`**: The `--tag` flag assigns a human-readable name (a "tag") to the finished image. You've named it **`opensta`**, which makes it easy to find and run later (e.g., `docker run opensta`).
+
+* **`.`** (the dot at the end): This specifies the **build context**, which is the set of files in your current directory. It tells Docker where to find the Dockerfile and any other local files that need to be included in the image.
+
+#### **Step 2 -** Run OpenSTA
+
+This command starts a new container from `opensta` image and gives an interactive command line inside it, with the local files readily accessible. 🚀
+
+`docker run -it -v $HOME:/data opensta`
+
+* **`docker run`**: The command to create and start a new container from a specified image.
+
+* **`-it`**: This is a combination of two flags that are almost always used together for interactive sessions:
+    * **`-i`** (`--interactive`): Keeps the input stream (STDIN) open, allowing you to type commands into the container.
+    * **`-t`** (`--tty`): Allocates a pseudo-terminal, which gives you the shell prompt and makes the container session feel like a regular terminal.
+
+* **`-v $HOME:/data`**: This is the most important part for file sharing. The `-v` (`--volume`) flag **mounts** a host directory into the container.
+    * **`$HOME`**: This is a variable that points to your home directory on your main computer (the **host**).
+    * **`/data`**: This is the path inside the **container** where your home directory will appear.
+    * **`:`**: This colon separates the host path from the container path.
+    * Essentially, you've created a direct link between your computer's home directory and the `/data` directory inside the container. Any file you place in `$HOME` will be instantly available inside the container at `/data`, and any report you generate inside the container at `/data` will be saved directly to your computer. ↔️
+
+* **`opensta`**: This specifies the name of the image to use as the blueprint for creating and running this container. It's the image you built in the previous step.
+
+The `%` terminal confirms that the OpenSTA is running.
 
 ### 5. Walkthrough of a Basic Example
 
@@ -130,7 +163,7 @@ set_input_delay -clock clk 0.1 {in1 in2}
 # indication of the design's overall speed.
 report_checks -path_delay min_max
 
-# 8. Exit the Tool
+# 7. Exit the Tool
 # Exits the OpenSTA interactive shell.
 exit
 ```
@@ -145,39 +178,18 @@ exit
 
 #### **Analysis of the Output**
 
-* **Hold Analysis:**
-  1.  **Startpoint**: in1 (input port clocked by clk)
-  2.  **Endpoint:** r1 (rising edge-triggered flip-flop clocked by clk)
-  3.  **Path Group:** clk (the timing path is being analyzed)
-  4.  **Path Type:** min (the analysis is a hold time check)
-  5.  **Data Arrival Time**: The earliest possible time a signal can travel from its startpoint to its endpoint which is the sum of min delays in the timing path.
-  6.  **Data Required Time**: The earliest moment the data is allowed to change at the input of the capture flip-flop.
-  7.  **Slack**: This is the difference between the **Arrival Time** and the **Required Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 0.10ns which is positive and hence there is no timing violation. 
-
-Slack calculation:
-
-$$Slack_{hold} = \text{Arrival Time}_{min} - \text{Required Time}_{min}$$
-
-Hold time constraint:
-
-$$T_{cq_{min}} + T_{logic_{min}} > T_{hold}$$
-
-* **Setup Analysis:**
-  1.  **Startpoint**: r2 (rising edge-triggered flip-flop clocked by clk)
-  2.  **Endpoint:** r3 (rising edge-triggered flip-flop clocked by clk)
-  3.  **Path Group:** clk (the timing path is being analyzed)
-  4.  **Path Type:** max (the analysis is a setup time check)
-  5.  **Data Arrival Time**: The latest possible time a signal can travel from its startpoint to its endpoint which is the sum of max delays in the timing path.
-  6.  **Data Required Time**: The time by which the data must arrive at the capture flip-flop's input to be reliably captured by the next clock edge.
-  7.  **Slack**: This is the difference between the **Required Time** and the **Arrival Time**. If it's positive, the path has no violation. If it's negative, it's a timing violation. Here it is 9.83ns which is positive and hence there is no timing violation. 
-
-Slack calculation:
-
-$$Slack_{setup} = \text{Required Time}_{max} - \text{Arrival Time}_{max}$$
-
-Setup time constraint:
-
-$$T_{cq_{max}} + T_{logic_{max}} + T_{setup} < \text{Clock Period}$$
+| Feature | Hold Analysis | Setup Analysis |
+| :--- | :--- | :--- |
+| **Goal** | Ensures data doesn't change too soon after a clock edge. | Ensures data is stable long enough before a clock edge. |
+| **Path Type** | `min` (fastest path analysis) | `max` (slowest path analysis) |
+| **Startpoint** | `in1` (input port) | `r2` (flip-flop) |
+| **Endpoint** | `r1` (flip-flop) | `r3` (flip-flop) |
+| **Path Group** | `clk` | `clk` |
+| **Data Arrival Time**| The **earliest** possible time a signal arrives at the endpoint. | The **latest** possible time a signal arrives at the endpoint. |
+| **Data Required Time**| The earliest moment the data is allowed to change at the capture flop. | The time by which data **must arrive** to be reliably captured. |
+| **Slack Value** | **0.10 ns** (Positive, no violation) | **9.83 ns** (Positive, no violation) |
+| **Slack Calculation**| $Slack_{hold} = \text{Arrival Time}_{min} - \text{Required Time}_{min}$ | $Slack_{setup} = \text{Required Time}_{max} - \text{Arrival Time}_{max}$ |
+| **Timing Constraint**| $T_{cq_{min}} + T_{logic_{min}} > T_{hold}$ | $T_{cq_{max}} + T_{logic_{max}} + T_{setup} < \text{Clock Period}$ |
 
 -----
 
@@ -260,8 +272,53 @@ As the slack is positive for both the hold and setup time analysis there is no t
 
 #### **Step 4: Analyze Your Report**
 
-Open the generated `vsdbabysoc_timing_report.txt` file.
+Of course. Here is a more detailed breakdown of the timing reports, with explanations for each line item to clarify what is happening at every step of the analysis.
 
-  * **What is the worst slack value?** Is it positive or negative?
-  * If it's positive, your design meets the 50 MHz timing goal. ✅
-  * If it's negative, your design fails to meet timing. Look at the path details: which cells or nets in the `VSDBabySoC` design are contributing the most delay? This is your **critical path**.
+---
+## ## Detailed Hold Path Analysis (min)
+
+This analysis checks the **fastest path** to ensure data doesn't change too quickly, causing a violation at the capture flop.
+
+* **Path:** From flip-flop `_9108_` to `_8046_`
+* **Result:** Slack is **0.31 ns (MET)**. The path is stable.
+
+| Delay (ns) | Time (ns) | Path Description | Explanation |
+| :--- | :--- | :--- | :--- |
+| **Data Arrival Path** | (How fast the data *actually* travels) |
+| 0.00 | 0.00 | `clock clk` (rise edge) | The analysis starts at the rising edge of the clock (time zero). |
+| 0.00 | 0.00 | `_9108_/CLK` | The clock signal arrives at the launch flip-flop's clock pin (`CLK`). |
+| 0.27 | 0.27 | `_9108_/Q` | **Clock-to-Q Delay:** The time it takes for the flip-flop's output (`Q`) to update after the clock edge. |
+| 0.00 | 0.27 | `_8046_/D` | **Net Delay:** The time for the signal to travel along the wire to the next flip-flop's data pin (`D`). |
+| | **0.27** | **Data Arrival Time** | The total time it took for the data to arrive at the destination. |
+| **Data Required Path**| (How long the data *must* remain stable) |
+| 0.00 | 0.00 | `clock clk` (rise edge) | This is the *same* clock edge, now viewed from the capture flip-flop. |
+| 0.00 | 0.00 | `_8046_/CLK` | The clock edge arrives at the capture flip-flop. |
+| -0.03 | -0.03 | `library hold time` | **Hold Constraint:** The data must remain stable for `0.03 ns` *after* the clock edge. |
+| | **-0.03** | **Data Required Time** | The time boundary. The data is required to be stable until this moment. |
+
+**Summary:** The data arrives at `0.27 ns` and was only required to stay stable until `-0.03 ns`. The slack is calculated as `Arrival Time - Required Time` (`0.27 - (-0.03) = 0.30 ns`, matching the report's `0.31 ns` after tool precision). Since it's positive, the hold condition is met.
+
+---
+## ## Detailed Setup Path Analysis (max)
+
+This analysis checks the **slowest path** (critical path) to ensure data arrives *before* the next clock edge.
+
+* **Path:** From flip-flop `_9085_` to `_8462_`
+* **Result:** Slack is **2.26 ns (MET)**. The path is fast enough.
+
+| Delay (ns) | Time (ns) | Path Description | Explanation |
+| :--- | :--- | :--- | :--- |
+| **Data Arrival Path** | (How long the data *actually* takes to arrive) |
+| 0.00 | 0.00 | `clock clk` (rise edge) | The analysis starts at the rising edge of the clock (time zero). |
+| 0.00 | 0.00 | `_9085_/CLK` | The clock signal arrives at the launch flip-flop's clock pin (`CLK`). |
+| 8.43 | 8.43 | `_9085_/Q` | **Launch & Logic Delay:** Time for the data to launch from the flip-flop and travel through logic. |
+| -0.25 | 8.19 | `_6479_/Y` | **Intermediate Logic Delay:** The signal passes through a logic gate (`a21oi_1`). |
+| 0.00 | 8.19 | `_8462_/D` | **Net Delay:** The final wire delay to the capture flip-flop's data pin (`D`). |
+| | **8.19** | **Data Arrival Time** | The total time it took for the data to arrive at the destination. |
+| **Data Required Path**| (The deadline for when the data *must* arrive) |
+| 11.00 | 11.00 | `clock clk` (rise edge) | This is the **next** clock edge, which defines the end of the timing window. |
+| 0.00 | 11.00 | `_8462_/CLK` | The capture clock edge arrives at the capture flip-flop. |
+| -0.55 | 10.45 | `library setup time` | **Setup Constraint:** The data must be stable for `0.55 ns` *before* this clock edge. |
+| | **10.45** | **Data Required Time** | The final deadline by which the data must have arrived and be stable. |
+
+**Summary:** The data must arrive by **10.45 ns**, but it actually arrives much earlier at **8.19 ns**. The slack is calculated as `Required Time - Arrival Time` (`10.45 - 8.19 = 2.26 ns`). Since it's positive, the setup condition is comfortably met. The next clock edge is at 11 ns, the frequency of operation is approximately 90.91 MHz.
