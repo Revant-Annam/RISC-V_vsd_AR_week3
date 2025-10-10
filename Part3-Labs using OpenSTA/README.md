@@ -102,6 +102,9 @@ This command starts a new container from `opensta` image and gives an interactiv
 
 The `%` terminal confirms that the OpenSTA is running.
 
+<img width="1920" height="1080" alt="Screenshot from 2025-10-10 01-14-13" src="https://github.com/user-attachments/assets/bd72043f-0535-43ca-8b92-b002ffbfec15" />
+
+
 ### 5. Walkthrough of a Basic Example
 
 #### **Netlist**
@@ -170,20 +173,19 @@ exit
 
 #### **Output Received**
 
-<img width="1920" height="1080" alt="Screenshot from 2025-10-08 21-32-35" src="https://github.com/user-attachments/assets/2888c77e-521c-4a00-804b-bb239584b469" />
+<img width="1920" height="1080" alt="Screenshot from 2025-10-10 01-15-30" src="https://github.com/user-attachments/assets/3fb669ed-b13a-4b70-8be7-543c89c3104b" />
 
-
-<img width="1920" height="1080" alt="Screenshot from 2025-10-08 21-32-52" src="https://github.com/user-attachments/assets/1d8afc2f-08d3-4aac-860a-5876a314457a" />
+<img width="1920" height="1080" alt="Screenshot from 2025-10-10 01-16-30" src="https://github.com/user-attachments/assets/cd477ec4-06a1-4629-8c4f-f1cbc1592411" />
 
 
 #### **Analysis of the Output**
 
 | Feature | Hold Analysis | Setup Analysis |
 | :--- | :--- | :--- |
-| **Goal** | Ensures data doesn't change too soon after a clock edge. | Ensures data is stable long enough before a clock edge. |
-| **Path Type** | `min` (fastest path analysis) | `max` (slowest path analysis) |
-| **Startpoint** | `in1` (input port) | `r2` (flip-flop) |
-| **Endpoint** | `r1` (flip-flop) | `r3` (flip-flop) |
+| **Goal** | Ensures data doesn't change too soon after a clock edge. | Ensures data is stable long enough before the next clock edge. |
+| **Path Type** | `min` (fastest path analysis which is hold analysis) | `max` (slowest path analysis which is setup analysis) |
+| **Startpoint** | `in1` (input port) | `r2` (rising edge-triggered flip-flop clocked by clk) |
+| **Endpoint** | `r1` (rising edge-triggered flip-flop clocked by clk) | `r3` (rising edge-triggered flip-flop clocked by clk) |
 | **Path Group** | `clk` | `clk` |
 | **Data Arrival Time**| The **earliest** possible time a signal arrives at the endpoint. | The **latest** possible time a signal arrives at the endpoint. |
 | **Data Required Time**| The earliest moment the data is allowed to change at the capture flop. | The time by which data **must arrive** to be reliably captured. |
@@ -193,9 +195,9 @@ exit
 
 -----
 
-### Performing STA on `VSDBabySoC` 📈
+## Performing STA on `VSDBabySoC` 📈
 
-#### **Step 1: Prerequisites**
+### **Step 1: Prerequisites**
 
 In the `VLSI/VSDBabySoC/src` directory I have made a `vsdbabysoc_min_max_delays.tcl` for perfoming the setup and hold time checks for the VSDBabySoC. The contents of `.tcl` file can be run individually in the OpenSTA tool also. The contents of the file:
 
@@ -221,7 +223,7 @@ read_sdc /data/VLSI/VSDBabySoC/src/sdc/vsdbabysoc_synthesis.sdc
 report_checks
 ```
 
-#### **Step 2: Correcting the error**
+### **Step 2: Correcting the error**
 
 With the help of docker command we can run the `.tcl` file,
 
@@ -257,7 +259,7 @@ pin (GND#2) {
 
 A similar error occured in line 68.
 
-#### **Step 3: Run `.tcl` file in OpenSTA**
+### **Step 3: Run `.tcl` file in OpenSTA**
 
 After correcting the errors using the same docker command we can run the `.tcl` file. The timing report generated is 
 
@@ -270,12 +272,9 @@ After correcting the errors using the same docker command we can run the `.tcl` 
 As the slack is positive for both the hold and setup time analysis there is no timing violation.
 
 
-#### **Step 4: Analyze Your Report**
+### **Step 4: Analyze Your Report**
 
-Of course. Here is a more detailed breakdown of the timing reports, with explanations for each line item to clarify what is happening at every step of the analysis.
-
----
-## ## Detailed Hold Path Analysis (min)
+#### Detailed Hold Path Analysis (min)
 
 This analysis checks the **fastest path** to ensure data doesn't change too quickly, causing a violation at the capture flop.
 
@@ -298,8 +297,7 @@ This analysis checks the **fastest path** to ensure data doesn't change too quic
 
 **Summary:** The data arrives at `0.27 ns` and was only required to stay stable until `-0.03 ns`. The slack is calculated as `Arrival Time - Required Time` (`0.27 - (-0.03) = 0.30 ns`, matching the report's `0.31 ns` after tool precision). Since it's positive, the hold condition is met.
 
----
-## ## Detailed Setup Path Analysis (max)
+#### Detailed Setup Path Analysis (max)
 
 This analysis checks the **slowest path** (critical path) to ensure data arrives *before* the next clock edge.
 
@@ -322,3 +320,114 @@ This analysis checks the **slowest path** (critical path) to ensure data arrives
 | | **10.45** | **Data Required Time** | The final deadline by which the data must have arrived and be stable. |
 
 **Summary:** The data must arrive by **10.45 ns**, but it actually arrives much earlier at **8.19 ns**. The slack is calculated as `Required Time - Arrival Time` (`10.45 - 8.19 = 2.26 ns`). Since it's positive, the setup condition is comfortably met. The next clock edge is at 11 ns, the frequency of operation is approximately 90.91 MHz.
+
+**Other observations:**
+
+* **Pre-Layout Analysis:** The `0.00 ns` net delays indicate this timing report analyzes the synthesized design assuming ideal, instantaneous connections.
+
+* **Focus on Logic Delay:** This analysis validates the timing of the logic gates themselves, ignoring the impact of wire delays.
+
+* **Optimistic Slack:** The current positive slack of **2.26 ns** is a good sign, but it's an optimistic best-case scenario.
+
+## **VSDBabySoC PVT Corner Analysis (Post-Synthesis Timing)**
+
+### What is PVT Corner Analysis?
+
+PVT analysis is a method used in chip design to verify that a circuit will function correctly under all possible real-world conditions. PVT stands for **Process**, **Voltage**, and **Temperature**.
+
+  * **Process (P):** Due to tiny, unavoidable imperfections during manufacturing, transistors on a chip can be slightly faster or slower than their typical specification. We model these as process corners:
+
+      * **SS (Slow-Slow):** Transistors are at their slowest.
+      * **FF (Fast-Fast):** Transistors are at their fastest.
+      * **TT (Typical-Typical):** Transistors perform as expected.
+
+  * **Voltage (V):** A chip operates within a specified voltage range (e.g., 1.8V ±10%).
+
+      * **Lower Voltage:** Makes transistors switch slower.
+      * **Higher Voltage:** Makes transistors switch faster.
+
+  * **Temperature (T):** The chip's performance is affected by its operating temperature.
+
+      * **Higher Temperature:** Generally makes transistors slower.
+      * **Lower Temperature:** Generally makes transistors faster.
+
+By combining the extremes of these three factors, we create **PVT corners**. We perform Static Timing Analysis (STA) at these corners to find the absolute worst-case performance, ensuring the chip is robust.
+
+  * **Worst Case for Setup (Slowest Path):** To check for setup violations, we find the slowest possible condition: **Slow Process (SS), Low Voltage, and High Temperature**. If the data can arrive on time in this sluggish state, it will work in all faster conditions.
+  * **Worst Case for Hold (Fastest Path):** To check for hold violations, we find the fastest possible condition: **Fast Process (FF), High Voltage, and Low Temperature**. If data doesn't change too quickly in this speedy state, it will be fine in all slower conditions.
+
+-----
+
+### PVT Analysis Tcl Script for OpenSTA
+
+The script you provided loops through *all* available libraries, which is great for exploration but not targeted. For a proper PVT analysis, we only need to test the **critical corners** you identified.
+
+This improved script targets only the four most critical corners (two for setup, two for hold) to ensure your design's robustness efficiently.
+
+```tcl
+# --- 1. Setup Paths and Design Info ---
+set DESIGN_NAME "vsdbabysoc"
+
+# Paths for your setup
+set LIB_DIR       "/data/VLSI/VSDBabySoC/skywater-pdk-libs-sky130_fd_sc_hd/timing"
+set MACRO_LIB_DIR "/data/VLSI/VSDBabySoC/src/lib"
+set VERILOG_FILE  "/data/VLSI/VSDBabySoC/src/module/vsdbabysoc.synth.v"
+set SDC_FILE      "/data/VLSI/VSDBabySoC/src/sdc/vsdbabysoc_synthesis.sdc"
+set OUTPUT_DIR    "/data/VLSI/VSDBabySoC/STA_reports"
+
+# Create the output directory
+exec mkdir -p $OUTPUT_DIR
+
+
+# --- 2. Define Library Corners for Analysis ---
+set all_corners {
+    "sky130_fd_sc_hd__tt_025C_1v80.lib"
+    "sky130_fd_sc_hd__ff_100C_1v65.lib"
+    "sky130_fd_sc_hd__ff_100C_1v95.lib"
+    "sky130_fd_sc_hd__ff_n40C_1v56.lib"
+    "sky130_fd_sc_hd__ff_n40C_1v65.lib"
+    "sky130_fd_sc_hd__ff_n40C_1v76.lib"
+    "sky130_fd_sc_hd__ss_100C_1v40.lib"
+    "sky130_fd_sc_hd__ss_100C_1v60.lib"
+    "sky130_fd_sc_hd__ss_n40C_1v28.lib"
+    "sky130_fd_sc_hd__ss_n40C_1v35.lib"
+    "sky130_fd_sc_hd__ss_n40C_1v40.lib"
+    "sky130_fd_sc_hd__ss_n40C_1v44.lib"
+}
+
+
+# --- 3. Loop Through Each Corner and Perform STA ---
+foreach corner $all_corners {
+    reset_design
+    puts "## Analyzing Corner: $corner"
+
+    # Load the corner-specific standard cell library
+    read_liberty -min $LIB_DIR/$corner
+    read_liberty -max $LIB_DIR/$corner
+
+    # Load the macro libraries
+    read_liberty -min $MACRO_LIB_DIR/avsddac.lib
+    read_liberty -max $MACRO_LIB_DIR/avsddac.lib
+    read_liberty -min $MACRO_LIB_DIR/avsdpll.lib
+    read_liberty -max $MACRO_LIB_DIR/avsdpll.lib
+
+    # Load design and constraints
+    read_verilog $VERILOG_FILE
+    link_design $DESIGN_NAME
+    read_sdc $SDC_FILE
+
+    # --- 4. Generate Reports ---
+    set report_base_name [string map {.lib ""} $corner]
+
+    report_checks -path_delay max -digits 4 > $OUTPUT_DIR/${report_base_name}_setup.txt
+    report_checks -path_delay min -digits 4 > $OUTPUT_DIR/${report_base_name}_hold.txt
+
+    exec echo "--- Corner: $corner ---" >> $OUTPUT_DIR/summary_wns.txt
+    report_wns -digits 4 >> $OUTPUT_DIR/summary_wns.txt
+    
+    exec echo "--- Corner: $corner ---" >> $OUTPUT_DIR/summary_tns.txt
+    report_tns -digits 4 >> $OUTPUT_DIR/summary_tns.txt
+}
+
+puts "## Analysis Complete. Reports are located in: $OUTPUT_DIR"
+```
