@@ -576,5 +576,20 @@ TNS is the sum of all negative slacks, indicating how widespread the timing fail
 
 **Observation:** The TNS is extremely large as it is the sum of all the negative slacks. This also indicates that the design made is working fine for the typical (TT) and the fast (FF) corners but has multiple paths which fail in the slow (SS) corner.
 
+A summary of the post-synthesis PVT timing analysis is presented below:
 
+| PVT Corner | WHS (ns) | WSS (ns) | WNS (ns) | TNS (ns) |
+| :--- | :--- | :--- | :--- | :--- |
+| sky130_fd_sc_hd__ff_100C_1v65 | 0.2491 | 4.1853 | 0.0000 | 0.0000 |
+| sky130_fd_sc_hd__ff_100C_1v95 | 0.1960 | 5.6274 | 0.0000 | 0.0000 |
+| sky130_fd_sc_hd__ff_n40C_1v56 | 0.2915 | 1.8047 | 0.0000 | 0.0000 |
+| sky130_fd_sc_hd__ff_n40C_1v65 | 0.2551 | 3.1788 | 0.0000 | 0.0000 |
+| sky130_fd_sc_hd__ff_n40C_1v76 | 0.2243 | 4.2413 | 0.0000 | 0.0000 |
+| sky130_fd_sc_hd__ss_100C_1v40 | 0.9053 | -11.9055 | -11.9055 | -8815.4707 |
+| sky130_fd_sc_hd__ss_100C_1v60 | 0.6420 | -4.8042 | -4.8042 | -3139.9275 |
+| sky130_fd_sc_hd__ss_n40C_1v28 | 1.8296 | -55.7561 | -55.7561 | -47920.4336 |
+| sky130_fd_sc_hd__ss_n40C_1v35 | 1.3475 | -35.1855 | -35.1855 | -29705.6523 |
+| sky130_fd_sc_hd__ss_n40C_1v40 | 1.1249 | -27.0853 | -27.0853 | -22367.9980 |
+| sky130_fd_sc_hd__ss_n40C_1v44 | 0.9909 | -22.7070 | -22.7070 | -18496.5918 |
+| sky130_fd_sc_hd__tt_025C_1v80 | 0.3096 | 2.2603 | 0.0000 | 0.0000 |
 
