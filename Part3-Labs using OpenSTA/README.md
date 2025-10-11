@@ -425,10 +425,12 @@ puts "## Analysis script finished. Reports are in: $OUTPUT_DIR"
 #### **Step 2: Run the Analysis Using Docker**
 
 To execute the Tcl script inside the OpenSTA Docker container. In the same directory where the `.tcl` file is located run the command:
-    ```bash
+    
+```bash
     docker run -v $HOME:/data opensta opensta -no_splash /data/VLSI/VSDBabySoC/sta_across_pvt.tcl
-    ```
-    This will create a new directory named `STA_reports` containing summary text files.
+```
+
+This will create a new directory named `STA_reports` containing summary text files.
 
 #### **Step 3: Create the Python Script for Plotting**
 
@@ -507,10 +509,12 @@ if __name__ == "__main__":
 #### **Step 4: Run the Python Script to Generate Graphs**
 
 Go into the output directory and run the script.
-    ```bash
+
+```bash
     cd STA_reports/
     python3 plot_reports.py
-    ```
+```
+    
 This will generate `.png` graph files for each of the summary reports.
 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6f869ecf-6897-4a8b-8a73-223217454cdf" />
@@ -519,9 +523,9 @@ This will generate `.png` graph files for each of the summary reports.
 
 The graphs visualize key timing metrics. Here’s what they mean and why they are important:
 
-| Metric | What it Means | Why We Look at It |
+| Metric | Meaning | USE |
 | :--- | :--- | :--- |
-| **WNS** (Worst Negative Slack) | The slack of the **single worst violating path** in the entire design for setup time. If no paths violate timing, WNS is `0`. | This is the most critical number for performance. A negative WNS means the chip **fails to meet its target frequency**. |
+| **WNS** (Worst Negative Slack) | The slack of the **single worst violating path** in the entire design for setup time. | This is the most critical number for performance. A negative WNS means the chip **fails to meet its target frequency**. |
 | **TNS** (Total Negative Slack) | The **sum of all negative slacks** from every path that violates setup timing. | While WNS shows the worst violation allowing to analyze the maximum frequency, TNS gives an idea on how many paths are violating. A large TNS indicates a large number of failing paths, suggesting a major issue. A small TNS means only a few paths need fixing. |
 | **Worst Max Slack** (Setup Slack) | The slack of the **slowest path** (the critical path), This is also a setup analysis | This is a direct measure of the design's maximum frequency. |
 | **Worst Min Slack** (Hold Slack) | The slack of the **fastest path**. This is also a hold analysis. | This checks for **hold violations**, where a signal arrives too quickly and corrupts data. If this is negative then the design might end up in a metastable state. |
