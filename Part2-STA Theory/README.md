@@ -5,16 +5,23 @@
 * **Starting Points:** Input ports or clock pins where signals originate and timing begins.
 * **End Points:** Output ports or D pins of flip-flops where timing ends and data is captured.
 * **Timing Path:** The route followed by a signal from a startpoint to an endpoint through combinational logic.
+
+<img width="1920" height="1080" alt="Screenshot (344)" src="https://github.com/user-attachments/assets/d982c81a-6753-4305-8fea-05e88591f349" />
+<p align = "center"> Timing paths </p>
+
 * **Arrival Time (AT):** The actual time taken by a signal to propagate from the starting point to the endpoint.
 * **Required Time (RT):** The latest or earliest time by which a signal must arrive for the circuit to function correctly.
 * **Slack Equation:**
 
-   $$Slack = \text{Required Time} - \text{Arrival Time}$$
+   <p align = "center"> $$Slack = \text{Required Time} - \text{Arrival Time}$$ </p>
 
   * **Positive Slack:** Timing is met (safe margin).
   * **Negative Slack:** Timing violation (requires optimization).
   * **Setup Slack:** Difference between the required maximum and actual arrival time; ensures data arrives **before** the capturing clock edge.
   * **Hold Slack:** Difference between actual arrival and required minimum time; ensures data remains **stable after** the clock edge.
+
+<img width="1920" height="1080" alt="Screenshot (348)" src="https://github.com/user-attachments/assets/7f4f9ce8-2e81-4374-ac3a-0b323f4bfcf3" />
+<p align = "center"> Timing graph </p>
 
 ---
 
@@ -55,6 +62,9 @@
 * **Path-Based Analysis (PBA):** More realistic — analyzes only the actual paths used by data, improving accuracy.
 * **ECO (Engineering Change Order):** Used to fix negative slack by resizing or buffering critical cells.
 
+<img width="1920" height="1080" alt="Screenshot (349)" src="https://github.com/user-attachments/assets/17a62a6c-4ddb-4744-9a83-546059e4ac50" />
+<p align = "center"> Setup analysis for reg2reg type </p>
+
 ---
 
 ## **5. Flip-Flop Timing and Delays**
@@ -63,7 +73,9 @@
 * **Clk-to-Q Delay:** Time from clock edge to valid output (caused by inverters and pass transistors).
 * **Setup Equation:**
   
-  $$\theta + \delta_1 < T_{clk} + \delta_2 - T_{setup}$$
+  <p align = "center"> 
+     $$\theta + \delta_1 < T_{clk} + \delta_2 - T_{setup}$$   
+  </p>
   
   where θ = logic delay, δ₁ and δ₂ are clock arrival times at launch and capture FFs.
 * Skew (δ₂ − δ₁) plays a crucial role in determining setup or hold margins.
@@ -82,6 +94,9 @@
 
 * Lists **cell delays**, **net delays**, **uncertainties**, and **setup/hold slack values** for all critical paths.
 * Helps identify timing violations and guides optimization during synthesis and post-layout analysis.
+
+<img width="1920" height="1080" alt="Screenshot (350)" src="https://github.com/user-attachments/assets/7617b793-f118-494a-8ae8-0c6664f167c9" />
+<p align = "center"> Timing report </p>
 
 ---
 
