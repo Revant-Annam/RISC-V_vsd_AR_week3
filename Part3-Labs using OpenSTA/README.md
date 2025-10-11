@@ -1,8 +1,10 @@
 # Part 3 – Generate Timing Graphs with OpenSTA
 
+Here is the table of contents for the document you provided.
+
   - [Understanding of OpenSTA tool](#understanding-of-opensta-tool)
-      - [OpenSTA: Inputs and Outputs ⚙️](https://www.google.com/search?q=%23opensta-inputs-and-outputs-%EF%B8%8F)
-      - [The Synopsys Design Constraints (`.sdc`) File 📝](https://www.google.com/search?q=%23the-synopsys-design-constraints-sdc-file-)
+      - [OpenSTA: Inputs and Outputs ⚙️](#opensta-inputs-and-outputs-%EF%B8%8F)
+      - [The Synopsys Design Constraints (`.sdc`) File 📝](the-synopsys-design-constraints-sdc-file-)
       - [Basic OpenSTA Commands ⚙️](https://www.google.com/search?q=%23basic-opensta-commands-%EF%B8%8F)
   - [Installation of OpenSTA](https://www.google.com/search?q=%23installation-of-opensta)
       - [Step 1: Build the Docker Image](https://www.google.com/search?q=%23step-1-build-the-docker-image)
