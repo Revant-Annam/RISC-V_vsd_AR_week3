@@ -531,5 +531,37 @@ The graphs visualize key timing metrics. Here’s what they mean and why they ar
 | **Worst Min Slack** (Hold Slack) | The slack of the **fastest path**. This is also a hold analysis. | This checks for **hold violations**, where a signal arrives too quickly and corrupts data. If this is negative then the design might end up in a metastable state. |
 
 
+#### 1\. Worst Min Slack (Hold slack)
+
+This plot shows the margin for data stability identifying the fastest path in the design.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b49523d2-a52f-47a4-a02e-2b125c2f9d23" />
+
+**Result:** All bars are positive, meaning there are **no hold violations** in any corner. The design is stable.
+
+#### 2\. Worst Max Slack (Setup slack)
+
+This plot shows the margin for the slowest path in the design.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/18c5f582-5683-4562-ae0d-15a32c584658" />
+
+**Result:** The design meets timing in fast (FF) and typical (TT) corners but **fails in all slow (SS) corners**. The `ss_n40C_1v28` corner is the worst, limiting the chip's maximum frequency.
+
+#### 3\. Worst Negative Slack (WNS)
+
+WNS shows the value of the single worst setup violation.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/52d0768c-3040-4e8e-b68d-50ec76f91bf6" />
+
+**Observation:** This confirms the setup failure mainly in the slow (SS) corners. If negative it shows the same behaviour as the Setup slack and shows 0 if there is a positive slack. The `ss_n40C_1v28` corner is the worst.
+
+#### 4\. Total Negative Slack (TNS)
+
+TNS is the sum of all negative slacks, indicating how widespread the timing failures are.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b85cac2c-e1ac-421e-9253-cc906aa8dc92" />
+
+**Observation:** The TNS is extremely large as it is the sum of all the negative slacks. This also indicates that the design made is working fine for the typical (TT) and the fast (FF) corners but has multiple paths which fail in the slow (SS) corner.
+
 
 
