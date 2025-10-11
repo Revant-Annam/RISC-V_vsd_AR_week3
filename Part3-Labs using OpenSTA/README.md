@@ -25,13 +25,7 @@
 
 The **`.sdc` (Synopsys Design Constraints)** file contains all the **timing and design intent constraints** used by STA tools. It defines how the tool interprets **clocking, input/output delays, loads, and operating conditions** to analyze timing paths correctly.
 
-### 🧩 Commonly Used SDC Commands
-
-Of course. Here is a clean, well-formatted table of common SDC (Synopsys Design Constraints) commands used in Static Timing Analysis.
-
-***
-
-### Common SDC Timing Commands
+#### 🧩 Commonly Used SDC Commands
 
 | **Command** | **Purpose** | **Common Syntax** | **Example** |
 | :--- | :--- | :--- | :--- |
@@ -53,7 +47,7 @@ Of course. Here is a clean, well-formatted table of common SDC (Synopsys Design 
 
 You typically run **OpenSTA** (Static Timing Analyzer) either in an **interactive shell** or by providing a **TCL script**. The commands must be entered in a logical sequence to load the libraries, design netlist, timing constraints, and then perform timing analysis.
 
-### Common OpenSTA Tcl Commands
+#### Common OpenSTA Tcl Commands
 
 | **Command** | **Purpose** | **Common Syntax** | **Example** |
 | :--- | :--- | :--- | :--- |
@@ -66,7 +60,7 @@ You typically run **OpenSTA** (Static Timing Analyzer) either in an **interactiv
 
 ### 4. Starting OpenSTA
 
-#### **Step 1 -** Build a docker image
+#### **Step 1 -** Build a Docker image
 
 Using this command, we can build the image for OpenSTA. It essentially packages the OpenSTA application and all its necessary dependencies into a standardized, portable unit called a Docker image. 📦
 
@@ -80,7 +74,7 @@ Using this command, we can build the image for OpenSTA. It essentially packages 
 
 * **`.`** (the dot at the end): This specifies the **build context**, which is the set of files in your current directory. It tells Docker where to find the Dockerfile and any other local files that need to be included in the image.
 
-#### **Step 2 -** Run OpenSTA
+#### **Step 2 -** Run Docker image
 
 This command starts a new container from `opensta` image and gives an interactive command line inside it, with the local files readily accessible. 🚀
 
@@ -130,8 +124,6 @@ Find the worst-case hold and setup slack in the netlist (example1.v).
 #### **Commands to Enter**
 
 ```tcl
-# --- OpenSTA Timing Analysis Script for example1 ---
-
 # 1. Load the Standard Cell Library
 # This command reads the Nangate 45nm library. The .lib file is crucial as it
 # contains all the timing information (propagation delays, setup/hold times) for
@@ -190,7 +182,7 @@ exit
 | **Data Arrival Time**| The **earliest** possible time a signal arrives at the endpoint. | The **latest** possible time a signal arrives at the endpoint. |
 | **Data Required Time**| The earliest moment the data is allowed to change at the capture flop. | The time by which data **must arrive** to be reliably captured. |
 | **Slack Value** | **0.10 ns** (Positive, no violation) | **9.83 ns** (Positive, no violation) |
-| **Slack Calculation**| $Slack_{hold} = \text{Arrival Time}_{min} - \text{Required Time}_{min}$ | $Slack_{setup} = \text{Required Time}_{max} - \text{Arrival Time}_{max}$ |
+| **Slack Calculation**| Slack_hold = Arrival Time_min - Required Time_min | Slack_setup = Required Time_max - Arrival Time_max |
 | **Timing Constraint**| $T_{cq_{min}} + T_{logic_{min}} > T_{hold}$ | $T_{cq_{max}} + T_{logic_{max}} + T_{setup} < \text{Clock Period}$ |
 
 -----
@@ -220,7 +212,7 @@ link_design vsdbabysoc
 read_sdc /data/VLSI/VSDBabySoC/src/sdc/vsdbabysoc_synthesis.sdc
 
 # Timing report
-report_checks
+report_checks -path_delay min_max
 ```
 
 ### **Step 2: Correcting the error**
@@ -274,7 +266,7 @@ As the slack is positive for both the hold and setup time analysis there is no t
 
 ### **Step 4: Analyze Your Report**
 
-#### Detailed Hold Path Analysis (min)
+#### Hold Path Analysis (min)
 
 This analysis checks the **fastest path** to ensure data doesn't change too quickly, causing a violation at the capture flop.
 
@@ -297,7 +289,7 @@ This analysis checks the **fastest path** to ensure data doesn't change too quic
 
 **Summary:** The data arrives at `0.27 ns` and was only required to stay stable until `-0.03 ns`. The slack is calculated as `Arrival Time - Required Time` (`0.27 - (-0.03) = 0.30 ns`, matching the report's `0.31 ns` after tool precision). Since it's positive, the hold condition is met.
 
-#### Detailed Setup Path Analysis (max)
+#### Setup Path Analysis (max)
 
 This analysis checks the **slowest path** (critical path) to ensure data arrives *before* the next clock edge.
 
@@ -353,17 +345,21 @@ PVT analysis is a method used in chip design to verify that a circuit will funct
 
 By combining the extremes of these three factors, we create **PVT corners**. We perform Static Timing Analysis (STA) at these corners to find the absolute worst-case performance, ensuring the chip is robust.
 
-  * **Worst Case for Setup (Slowest Path):** To check for setup violations, we find the slowest possible condition: **Slow Process (SS), Low Voltage, and High Temperature**. If the data can arrive on time in this sluggish state, it will work in all faster conditions.
-  * **Worst Case for Hold (Fastest Path):** To check for hold violations, we find the fastest possible condition: **Fast Process (FF), High Voltage, and Low Temperature**. If data doesn't change too quickly in this speedy state, it will be fine in all slower conditions.
-
 -----
 
 ### PVT Analysis Tcl Script for OpenSTA
 
-The script you provided loops through *all* available libraries, which is great for exploration but not targeted. For a proper PVT analysis, we only need to test the **critical corners** you identified.
+####  **Step 1: Create the STA Tcl Script**
 
-This improved script targets only the four most critical corners (two for setup, two for hold) to ensure your design's robustness efficiently.
+The Tcl script sequentially analyzes the design across multiple PVT corners,
 
+1.  **Sets Up Paths:** It defines the locations for all the input files (libraries, Verilog, SDC) and the output directory for reports.
+2.  **Loads Files in a Loop:** It iterates through a list of timing library (`.lib`) files. In each loop, it adds the next library, the Verilog netlist, and the SDC constraints.
+3.  **Generates Reports:** After loading each new library, it generates detailed and summary timing reports (`min_max`, `wns`, `tns`, etc.) and saves them to your output folder.
+
+<details>
+<summary><strong>run_pvt_analysis.tcl</strong></summary>
+  
 ```tcl
 # --- 1. Setup Paths ---
 set LIB_DIR       "/data/VLSI/VSDBabySoC/skywater-pdk-libs-sky130_fd_sc_hd/timing"
@@ -400,6 +396,7 @@ for {set i 1} {$i <= [array size list_of_lib_files]} {incr i} {
     read_liberty $LIB_DIR/$list_of_lib_files($i)
     read_verilog $VERILOG_FILE
     link_design vsdbabysoc
+    current_design
     read_sdc $SDC_FILE
 
     # Generate Reports
@@ -422,3 +419,113 @@ for {set i 1} {$i <= [array size list_of_lib_files]} {incr i} {
 
 puts "## Analysis script finished. Reports are in: $OUTPUT_DIR"
 ```
+
+</details>
+
+#### **Step 2: Run the Analysis Using Docker**
+
+To execute the Tcl script inside the OpenSTA Docker container. In the same directory where the `.tcl` file is located run the command:
+    ```bash
+    docker run -v $HOME:/data opensta opensta -no_splash /data/VLSI/VSDBabySoC/sta_across_pvt.tcl
+    ```
+    This will create a new directory named `STA_reports` containing summary text files.
+
+#### **Step 3: Create the Python Script for Plotting**
+
+This python code will read the summary reports and create bar charts to visualize the results.
+
+<details>
+<summary><strong>plotting_sumary.py</strong></summary>
+  
+```python
+import matplotlib.pyplot as plt
+import glob
+import os
+
+def create_plot(report_file):
+    corners, slacks = [], []
+    with open(report_file, 'r') as f:
+        lines = f.readlines()
+
+    for i in range(0, len(lines), 2):
+        if i + 1 >= len(lines) or not lines[i].strip():
+            continue
+        try:
+            corner_name = lines[i].strip().replace('.lib', '')
+            slack_line = lines[i+1].strip()
+            # Handle cases where the report is empty (no violations)
+            if slack_line:
+                slack_value = float(slack_line.split()[-1])
+            else:
+                slack_value = 0.0
+            corners.append(corner_name)
+            slacks.append(slack_value)
+        except (IndexError, ValueError):
+            print(f"Warning: Skipping malformed entry in '{report_file}' near line: {lines[i].strip()}")
+            continue
+
+    if not corners:
+        print(f"Warning: No valid data found in '{report_file}'. Skipping.")
+        return
+
+    plt.figure(figsize=(15, 8))
+    base_name = os.path.basename(report_file).replace('.txt', '')
+    title = base_name.replace('_', ' ').replace('summary', ' ').strip().title()
+    output_filename = f"{base_name}_graph.png"
+    
+    colors = ['#4CAF50' if s >= 0 else '#F44336' for s in slacks]
+    bars = plt.bar(corners, slacks, color=colors)
+
+    plt.axhline(0, color='black', linewidth=0.8, linestyle='--')
+    plt.ylabel('Slack (ns)')
+    plt.xlabel('PVT Corner')
+    plt.title(f'{title} Across All Corners')
+    plt.xticks(rotation=45, ha='right')
+    
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2.0, yval, f'{yval:.4f}', va='bottom' if yval >=0 else 'top', ha='center', fontsize=9)
+
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.tight_layout()
+    plt.savefig(output_filename)
+    plt.close()
+    print(f"✅ Graph saved as '{output_filename}'")
+
+if __name__ == "__main__":
+    summary_files = glob.glob('summary_*.txt')
+    if not summary_files:
+        print("Error: No summary files found.")
+    else:
+        print(f"Found {len(summary_files)} summary files to plot.")
+        for report in summary_files:
+            create_plot(report)
+        print("\n🚀 All plots generated successfully!")
+```
+</details>
+
+#### **Step 4: Run the Python Script to Generate Graphs**
+
+Go into the output directory and run the script.
+    ```bash
+    cd STA_reports/
+    python3 plot_reports.py
+    ```
+This will generate `.png` graph files for each of the summary reports.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6f869ecf-6897-4a8b-8a73-223217454cdf" />
+
+#### Step 5: Understanding the Results
+
+The graphs visualize key timing metrics. Here’s what they mean and why they are important:
+
+| Metric | What it Means | Why We Look at It |
+| :--- | :--- | :--- |
+| **WNS** (Worst Negative Slack) | The slack of the **single worst violating path** in the entire design for setup time. If no paths violate timing, WNS is `0`. | This is the most critical number for performance. A negative WNS means the chip **fails to meet its target frequency**. |
+| **TNS** (Total Negative Slack) | The **sum of all negative slacks** from every path that violates setup timing. | While WNS shows the worst violation allowing to analyze the maximum frequency, TNS gives an idea on how many paths are violating. A large TNS indicates a large number of failing paths, suggesting a major issue. A small TNS means only a few paths need fixing. |
+| **Worst Max Slack** (Setup Slack) | The slack of the **slowest path** (the critical path), This is also a setup analysis | This is a direct measure of the design's maximum frequency. |
+| **Worst Min Slack** (Hold Slack) | The slack of the **fastest path**. This is also a hold analysis. | This checks for **hold violations**, where a signal arrives too quickly and corrupts data. If this is negative then the design might end up in a metastable state. |
+
+
+
+
