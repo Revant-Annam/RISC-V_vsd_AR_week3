@@ -1,7 +1,5 @@
 # Part 3 – Generate Timing Graphs with OpenSTA
 
-Here is the table of contents for the document you provided.
-
   - [Understanding of OpenSTA tool](#understanding-of-opensta-tool--)
       - [OpenSTA: Inputs and Outputs ⚙️](#1-opensta-inputs-and-outputs-%EF%B8%8F)
       - [The Synopsys Design Constraints (`.sdc`) File 📝](#2-the-synopsys-design-constraints-sdc-file-)
