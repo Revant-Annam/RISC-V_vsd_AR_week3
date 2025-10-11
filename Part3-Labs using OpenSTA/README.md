@@ -532,6 +532,9 @@ This will generate `.png` graph files for each of the summary reports.
 
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6f869ecf-6897-4a8b-8a73-223217454cdf" />
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e3760cb4-d71c-4c37-877a-078093e871a7" />
+
+
 #### Step 5: Understanding the Results
 
 The graphs visualize key timing metrics. Here’s what they mean and why they are important:
